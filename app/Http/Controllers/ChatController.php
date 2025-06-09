@@ -8,6 +8,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Events\ChatMessageEvent;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 
 class ChatController extends Controller
 {
@@ -30,34 +32,32 @@ class ChatController extends Controller
                 ob_start();
             }
 
-            // Listen for ChatMessageEvent
-            Event::listen(ChatMessageEvent::class, function($data) {
-                echo "data: " . json_encode($data) . "\n\n";
-                if (ob_get_level() > 0) {
-                    ob_flush();
-                }
-                flush();
-            });
-
-            while (true) {
-                if (connection_aborted()) {
-                    break;
-                }
-
-                // Send heartbeat every 30 seconds
+            try {
                 echo "event: ping\n";
                 echo "data: " . json_encode(['timestamp' => time()]) . "\n\n";
                 if (ob_get_level() > 0) {
                     ob_flush();
                 }
                 flush();
-
-                sleep(30);
-            }
-
-            // Clean up
-            if (ob_get_level() > 0) {
-                ob_end_flush();
+                sleep(1);
+                // Listen for ChatMessageEvent
+                Redis::subscribe(['test-channel'], function (string $message, string $channel) {
+                    if (connection_aborted()) {
+                        throw new \Exception('Connection aborted');
+                    }
+                    echo "data: " . $message . "\n\n";
+                    if (ob_get_level() > 0) {
+                        ob_flush();
+                    }
+                    flush();
+                });
+            } catch (\Exception $th) {
+                //throw $th;
+            } finally {
+                // Clean up
+                if (ob_get_level() > 0) {
+                    ob_end_flush();
+                }
             }
         });
 
@@ -79,7 +79,7 @@ class ChatController extends Controller
         ];
 
         // Emit the event directly
-        event(new ChatMessageEvent($message));
+        Redis::publish('test-channel', json_encode($message));
 
         return response()->json(['status' => 'success']);
     }
