@@ -52,12 +52,21 @@ class ChatController extends Controller
                     flush();
                 });
             } catch (\Exception $th) {
-                //throw $th;
+                // Redis::publish('test-channel', json_encode([
+                //     'user' => Auth::check() ? Auth::user()->name : 'Anonymous',
+                //     'message' => 'Lost connection to server',
+                //     'timestamp' => now()->toIso8601String()
+                // ]));
             } finally {
                 // Clean up
                 if (ob_get_level() > 0) {
                     ob_end_flush();
                 }
+                // Redis::publish('test-channel', json_encode([
+                //     'user' => Auth::check() ? Auth::user()->name : 'Anonymous',
+                //     'message' => 'Disconnected from server',
+                //     'timestamp' => now()->toIso8601String()
+                // ]));
             }
         });
 
