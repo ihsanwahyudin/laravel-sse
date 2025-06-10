@@ -20,63 +20,39 @@ class ChatController extends Controller
 
     public function stream()
     {
-        $response = new StreamedResponse(function() {
-            // Set headers for SSE
-            header('Content-Type: text/event-stream');
-            header('Cache-Control: no-cache');
-            header('Connection: keep-alive');
-            header('X-Accel-Buffering: no');
-
-            // Start output buffering
-            if (ob_get_level() == 0) {
-                ob_start();
-            }
-
+        ini_set('max_execution_time', 0);
+        return response()->stream(function () {
             try {
+                // Start output buffering
+                if (ob_get_level() == 0) {
+                    ob_start();
+                }
+                // Send ping event
                 echo "event: ping\n";
                 echo "data: " . json_encode(['timestamp' => time()]) . "\n\n";
-                if (ob_get_level() > 0) {
-                    ob_flush();
-                }
+                ob_flush();
                 flush();
                 sleep(1);
                 // Listen for ChatMessageEvent
                 Redis::subscribe(['test-channel'], function (string $message, string $channel) {
-                    if (connection_aborted()) {
-                        throw new \Exception('Connection aborted');
-                    }
                     echo "data: " . $message . "\n\n";
-                    if (ob_get_level() > 0) {
-                        ob_flush();
-                    }
+                    ob_flush();
                     flush();
                 });
             } catch (\Exception $th) {
-                // Redis::publish('test-channel', json_encode([
-                //     'user' => Auth::check() ? Auth::user()->name : 'Anonymous',
-                //     'message' => 'Lost connection to server',
-                //     'timestamp' => now()->toIso8601String()
-                // ]));
+
             } finally {
                 // Clean up
                 if (ob_get_level() > 0) {
                     ob_end_flush();
                 }
-                // Redis::publish('test-channel', json_encode([
-                //     'user' => Auth::check() ? Auth::user()->name : 'Anonymous',
-                //     'message' => 'Disconnected from server',
-                //     'timestamp' => now()->toIso8601String()
-                // ]));
             }
-        });
-
-        // Set response headers
-        $response->headers->set('Content-Type', 'text/event-stream');
-        $response->headers->set('Cache-Control', 'no-cache');
-        $response->headers->set('Connection', 'keep-alive');
-        $response->headers->set('X-Accel-Buffering', 'no');
-
-        return $response;
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection' => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
     }
 
     public function send(Request $request)
@@ -92,4 +68,4 @@ class ChatController extends Controller
 
         return response()->json(['status' => 'success']);
     }
-} 
+}

@@ -15,7 +15,7 @@
                     <h2 class="text-xl font-semibold text-gray-800">Realtime Chat</h2>
                     <p id="connection-status" class="text-sm text-gray-500">Connecting...</p>
                 </div>
-                
+
                 <!-- Chat Messages Container -->
                 <div id="chat-messages" class="p-4 h-96 overflow-y-auto space-y-4">
                     <!-- Messages will be inserted here -->
@@ -24,11 +24,11 @@
                 <!-- Chat Input Form -->
                 <div class="p-4 border-t border-gray-200">
                     <form id="chat-form" class="flex space-x-2">
-                        <input type="text" 
-                               id="message-input" 
+                        <input type="text"
+                               id="message-input"
                                class="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:border-blue-500"
                                placeholder="Type your message...">
-                        <button type="submit" 
+                        <button type="submit"
                                 class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition duration-200">
                             Send
                         </button>
@@ -52,6 +52,7 @@
                 }
 
                 eventSource = new EventSource('/chat/stream');
+                // eventSource = new EventSource('/sse/chat-counter');
 
                 eventSource.onopen = function() {
                     connectionStatus.textContent = 'Connected';
@@ -68,7 +69,7 @@
                     connectionStatus.textContent = 'Disconnected - Reconnecting...';
                     connectionStatus.className = 'text-sm text-red-500';
                     eventSource.close();
-                    
+
                     // Attempt to reconnect after 5 seconds
                     setTimeout(connectSSE, 5000);
                 };
@@ -85,7 +86,7 @@
             // Send message
             chatForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
-                
+
                 const message = messageInput.value.trim();
                 if (!message) return;
 
@@ -133,4 +134,4 @@
         });
     </script>
 </body>
-</html> 
+</html>
