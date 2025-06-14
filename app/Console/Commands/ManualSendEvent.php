@@ -26,8 +26,9 @@ class ManualSendEvent extends Command
      */
     public function handle()
     {
-        Redis::publish('test-channel', json_encode([
-            'name' => 'Adam Wathan'
-        ]));
+        while (true) {
+            Redis::publish('ping-channel', 'ping');
+            sleep(3);
+        }
     }
 }

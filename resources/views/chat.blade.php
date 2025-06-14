@@ -61,7 +61,9 @@
 
                 eventSource.onmessage = function(event) {
                     const message = JSON.parse(event.data);
-                    appendMessage(message);
+                    if(message.event === 'new-message') {
+                        appendMessage(message.data);
+                    }
                 };
 
                 eventSource.onerror = function(error) {

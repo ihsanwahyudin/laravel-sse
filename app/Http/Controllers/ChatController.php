@@ -28,16 +28,24 @@ class ChatController extends Controller
                     ob_start();
                 }
                 // Send ping event
-                echo "event: ping\n";
-                echo "data: " . json_encode(['timestamp' => time()]) . "\n\n";
+                echo "data: " . json_encode([
+                    'event' => 'ping',
+                    'data' => ['timestamp' => time()]
+                ]) . "\n\n";
                 ob_flush();
                 flush();
                 sleep(1);
                 // Listen for ChatMessageEvent
-                Redis::subscribe(['test-channel'], function (string $message, string $channel) {
-                    echo "data: " . $message . "\n\n";
-                    ob_flush();
-                    flush();
+                Redis::subscribe(['sse-event-channel', 'ping-channel'], function (string $message, string $channel) {
+                    if($channel === config('database.redis.options.prefix') . 'sse-event-channel') {
+                        echo "data: " . $message . "\n\n";
+                        ob_flush();
+                        flush();
+                    } else if($channel === config('database.redis.options.prefix') . 'ping-channel') {
+                        echo $message . "\n\n";
+                        ob_flush();
+                        flush();
+                    }
                 });
             } catch (\Exception $th) {
 
@@ -58,13 +66,16 @@ class ChatController extends Controller
     public function send(Request $request)
     {
         $message = [
-            'user' => Auth::check() ? Auth::user()->name : 'Anonymous',
-            'message' => $request->input('message'),
-            'timestamp' => now()->toIso8601String()
+            'event' => 'new-message',
+            'data' => [
+                'user' => Auth::check() ? Auth::user()->name : 'Anonymous',
+                'message' => $request->input('message'),
+                'timestamp' => now()->toIso8601String()
+            ]
         ];
 
         // Emit the event directly
-        Redis::publish('test-channel', json_encode($message));
+        Redis::publish('sse-event-channel', json_encode($message));
 
         return response()->json(['status' => 'success']);
     }
